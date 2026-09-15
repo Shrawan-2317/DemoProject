@@ -5,7 +5,22 @@ Provides face position, mouth state, and head direction
 for interactive smoke direction and burst effects.
 """
 
-import mediapipe as mp
+try:
+    import mediapipe.python.solutions.face_mesh as mp_face_mesh
+except Exception:
+    try:
+        from mediapipe.python.solutions import face_mesh as mp_face_mesh
+    except Exception:
+        try:
+            import mediapipe as mp
+            mp_solutions = getattr(mp, "solutions", None)
+            if mp_solutions:
+                mp_face_mesh = mp_solutions.face_mesh
+            else:
+                mp_face_mesh = None
+        except Exception:
+            mp_face_mesh = None
+
 import numpy as np
 
 
@@ -24,14 +39,20 @@ class FaceTracker:
     FOREHEAD = 10
 
     def __init__(self, max_faces=1, detection_confidence=0.5, tracking_confidence=0.5):
-        self.mp_face = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face.FaceMesh(
-            static_image_mode=False,
-            max_num_faces=max_faces,
-            refine_landmarks=False,
-            min_detection_confidence=detection_confidence,
-            min_tracking_confidence=tracking_confidence,
-        )
+        self.mp_face = mp_face_mesh
+        self.face_mesh = None
+        if self.mp_face is not None:
+            try:
+                self.face_mesh = self.mp_face.FaceMesh(
+                    static_image_mode=False,
+                    max_num_faces=max_faces,
+                    refine_landmarks=False,
+                    min_detection_confidence=detection_confidence,
+                    min_tracking_confidence=tracking_confidence,
+                )
+            except Exception:
+                self.face_mesh = None
+
         self.face_detected = False
         self.face_center = (0, 0)
         self.mouth_open_ratio = 0.0
@@ -40,6 +61,9 @@ class FaceTracker:
     def detect(self, frame_rgb):
         """
         Detect face landmarks in an RGB frame.
+        """
+        if self.face_mesh is None:
+            return None
 
         Returns:
             dict with face data or None if no face detected.

@@ -5,7 +5,32 @@ Provides hand landmark detection, fingertip positions,
 palm center calculation, and hand state analysis.
 """
 
-import mediapipe as mp
+try:
+    import mediapipe.python.solutions.hands as mp_hands
+    import mediapipe.python.solutions.drawing_utils as mp_draw
+    import mediapipe.python.solutions.drawing_styles as mp_styles
+except Exception:
+    try:
+        from mediapipe.python.solutions import hands as mp_hands
+        from mediapipe.python.solutions import drawing_utils as mp_draw
+        from mediapipe.python.solutions import drawing_styles as mp_styles
+    except Exception:
+        try:
+            import mediapipe as mp
+            mp_solutions = getattr(mp, "solutions", None)
+            if mp_solutions:
+                mp_hands = mp_solutions.hands
+                mp_draw = mp_solutions.drawing_utils
+                mp_styles = mp_solutions.drawing_styles
+            else:
+                mp_hands = None
+                mp_draw = None
+                mp_styles = None
+        except Exception:
+            mp_hands = None
+            mp_draw = None
+            mp_styles = None
+
 import numpy as np
 
 
@@ -30,19 +55,28 @@ class HandTracker:
     PINKY_PIP = 18
 
     def __init__(self, max_hands=2, detection_confidence=0.6, tracking_confidence=0.5):
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(
-            static_image_mode=False,
-            max_num_hands=max_hands,
-            min_detection_confidence=detection_confidence,
-            min_tracking_confidence=tracking_confidence,
-        )
-        self.mp_draw = mp.solutions.drawing_utils
-        self.mp_styles = mp.solutions.drawing_styles
+        self.mp_hands = mp_hands
+        self.mp_draw = mp_draw
+        self.mp_styles = mp_styles
+        self.hands = None
+
+        if self.mp_hands is not None:
+            try:
+                self.hands = self.mp_hands.Hands(
+                    static_image_mode=False,
+                    max_num_hands=max_hands,
+                    min_detection_confidence=detection_confidence,
+                    min_tracking_confidence=tracking_confidence,
+                )
+            except Exception:
+                self.hands = None
 
     def detect(self, frame_rgb):
         """
         Detect hand landmarks in an RGB frame.
+        """
+        if self.hands is None:
+            return None
 
         Args:
             frame_rgb: RGB numpy array.
