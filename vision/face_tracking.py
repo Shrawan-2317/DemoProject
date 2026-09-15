@@ -61,13 +61,12 @@ class FaceTracker:
     def detect(self, frame_rgb):
         """
         Detect face landmarks in an RGB frame.
-        """
-        if self.face_mesh is None:
-            return None
 
         Returns:
             dict with face data or None if no face detected.
         """
+        if self.face_mesh is None:
+            return None
         try:
             results = self.face_mesh.process(frame_rgb)
 
@@ -123,4 +122,8 @@ class FaceTracker:
 
     def close(self):
         """Release MediaPipe resources."""
-        self.face_mesh.close()
+        if self.face_mesh is not None:
+            try:
+                self.face_mesh.close()
+            except Exception:
+                pass

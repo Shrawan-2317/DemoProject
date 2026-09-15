@@ -74,9 +74,6 @@ class HandTracker:
     def detect(self, frame_rgb):
         """
         Detect hand landmarks in an RGB frame.
-        """
-        if self.hands is None:
-            return None
 
         Args:
             frame_rgb: RGB numpy array.
@@ -84,6 +81,9 @@ class HandTracker:
         Returns:
             MediaPipe results object (may have .multi_hand_landmarks = None).
         """
+        if self.hands is None:
+            return None
+
         try:
             results = self.hands.process(frame_rgb)
             return results
@@ -176,7 +176,7 @@ class HandTracker:
 
     def draw_landmarks(self, frame, results):
         """Draw hand landmarks on the frame."""
-        if results and results.multi_hand_landmarks:
+        if results and results.multi_hand_landmarks and self.mp_draw and self.mp_hands:
             for hand_landmarks in results.multi_hand_landmarks:
                 self.mp_draw.draw_landmarks(
                     frame,
@@ -189,4 +189,8 @@ class HandTracker:
 
     def close(self):
         """Release MediaPipe resources."""
-        self.hands.close()
+        if self.hands is not None:
+            try:
+                self.hands.close()
+            except Exception:
+                pass
